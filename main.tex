@@ -1,4 +1,4 @@
-
+%文字
 \documentclass[a4paper,12pt]{jsreport}
 
 \usepackage[dvipdfmx]{graphicx}
@@ -9,6 +9,13 @@
 \usepackage{amsmath}
 \usepackage{here}
 \usepackage{longtable}
+
+%太字
+\usepackage{bm}
+
+
+%アルゴリズム
+\usepackage{algorithm,algorithmic}
 
 
 \begin{document}
@@ -29,6 +36,25 @@ test
 
 \section{研究の背景}
 
+\begin{comment}
+% Gene Ontology 説明
+Gene Ontology(GO)プロジェクトでは、生物学的概念を示す用語(GO term)とその相互関係を有向非巡回グラフ(DAG)によって構造化し、オントロジー形式のデータベースを提供している。
+それぞれのGO termは、生物学的プロセス(biological process; BP)、細胞の構成要素(cellular component; CC)、分子機能(molecular function; MF)のいずれかのカテゴリーに属しており、7桁の識別子からなる固有のIDが割り振られている。
+それぞれのカテゴリーは、biological\_process(GO:0008150)、cellular\_component(GO:0005575)、molecular\_function(GO:0003674)というGO用語をルートとして独立したオントロジー構造をとっている。
+また、それぞれのGO termには関連する遺伝子のアノテーション情報が含まれており、遺伝子がどのような生物学的プロセスに関わっているのか、細胞内のどこに影響しているのか、分子レベルでどのように機能しているのかといった情報が示されている。これらのアノテーション情報は、これまでに発表された科学文献をキュレーションすることで作成されている。
+GOはDAG構造をとるため、ルート以外のどのGO termも複数の親用語、または複数の子用語を持つことができ、遺伝子のアノテーション情報はDAG構造に従って子用語から親用語へと伝播する。よって、あるGO termへのアノテーションは、その全ての先祖の用語へのアノテーションを意味する。\\
+
+
+% DCell 説明
+DCellは、ただ遺伝子型から表現型を予測するのみに留まらず、その過程において細胞内部での反応をシミュレーションすることを目的とした表現型予測モデルである。
+基本的にはGOの構造を利用して設計されたニューラルネットワークであり、ネットワークの入力側がGOの子用語側に、出力側がGOの親用語側になるように配置されている。
+DCellのネットワークは、サブシステム、ノード、エッジの3つの要素から成り立っている。サブシステムは一つ一つのGO termを表し、それぞれのGO termの複雑さに応じていくつかのノードを内包している。
+GO termの複雑さはアノテーションされている遺伝子の数によって定められており、より多くの遺伝子がアノテーションされたGO termに対応するサブシステムほど多くのノードを含むこととなる。これによって、複雑なGO termほどより高次元のベクトルで表現できるようになる。
+エッジはGOの親子関係をそのまま反映したもので、子用語のサブシステム内の全てのノードから、親用語のサブシステム内の全てのノードに向かってエッジが引かれる。
+入力層は、対象とする生物の各遺伝子のうち、ネットワークで使用したGO termの少なくともどれか1つにアノテーションされている遺伝子一つ一つに対応するノードで構成されている。これらのノードから、入力側末端に位置する子用語のサブシステム内の全ノードに向かって、アノテーション情報に従ってエッジが引かれる。このことによって、遺伝子への摂動が親子関係を介してネットワーク内で伝播することとなり、細胞内部での反応をシミュレーションを可能にするとされている。
+\end{comment}
+
+
 
 \section{主題}
 
@@ -36,15 +62,147 @@ test
 \section{本稿の構成}
 
 
+
 \chapter{手法}
+\begin{comment}
+\#\#\#\#\#\#\#\#\#\#\# \\
+ニューラルネットワークの設計にデータベースを用いること\\
+設計に用いるデータについて\\
+ニューラルネットワークの設計手法について\\
+実験について\\
+評価手法について\\
+の順で説明すること\\
+\#\#\#\#\#\#\#\#\#\#\# \\
+\end{comment}
+
+\section{ネットワーク設計に使用したデータ}
+本研究では、ニューラルネットワーク設計のために複数のデータベース上の遺伝子集合を使用した。そこで本節では、ネットワーク設計に使用したデータベースと、取得したデータについて述べる。
+
+\subsection{Gene Ontology}
+\begin{comment}
+\#\#\#\#\#\#\#\#\#\#\# \\
+・gene ontology説明\\
+GO termと親子関係があるDAG構造を取ること\\
+BP、CC、MFに分かれていること\\
+それぞれがDAG構造をしていること\\
+アノテーション情報があること\\
+子用語のアノテーションは親用語のアノテーションになること\\
+遺伝子集合と親子関係を抽出すること\\
+\#\#\#\#\#\#\#\#\#\#\# \\
+\end{comment}
+
+% Gene Ontology 説明
+Gene Ontology(GO)は、生物学的概念を示す用語(GO term)と用語間の関係が有向非巡回グラフ(DAG)によって構造化されたデータベースである。DAGの頂点は各GO termによって構成され、頂点間のエッジは用語間の関係を表している。より概括的な用語である親用語から、より詳細な用語である子用語に向かってエッジが引かれており、ルート以外のどのGO termも複数の親用語、または複数の子用語を持つことができる。
+各GO termは、生物学的プロセス(biological process; BP)、細胞の構成要素(cellular component; CC)、分子機能(molecular function; MF)のいずれかのカテゴリーに属しており、7桁の識別子からなる固有のIDが割り振られている。
+それぞれのカテゴリーは、biological\_process(GO:0008150)、cellular\_component(GO:0005575)、molecular\_function(GO:0003674)というGO用語をルートとして独立したDAG構造をとっている。
+また、各GO termには関連する遺伝子集合が付加情報として与えられており、遺伝子がどのような生物学的プロセスに関わっているのか、細胞内のどこに影響しているのか、分子レベルでどのように機能しているのかといった情報が示されている。これらの付加情報は、DAG構造に従って子用語から親用語へと伝播する。したがって、あるGO termに関連する遺伝子集合は、その先祖の用語全てに関連することとなる。\\
+本実験では、BP、CC、MFを独立のデータベースとして扱う。 BP、CC、MFそれぞれについて、GO termごとに関連する遺伝子集合を抽出する。そして、のネットワークモジュール作成方法に従い、ネットワークモジュールを作成する。
+
+
+
+\subsection{Reactome}
+\begin{comment}
+\#\#\#\#\#\#\#\#\#\#\# \\
+・reactome説明\\
+パスウェイと親子関係があるDAG構造を取ること\\
+ルートがいくつかあること\\
+アノテーション情報があること\\
+子用語のアノテーションは親用語のアノテーションになること\\
+遺伝子集合と親子関係を抽出すること\\
+\#\#\#\#\#\#\#\#\#\#\# \\
+\end{comment}
+% Reactome 説明
+
+\subsection{Molecular Signatures Database}
+\begin{comment}
+\#\#\#\#\#\#\#\#\#\#\# \\
+・MSigDB説明\\
+いくつかの要素で遺伝子集合があること\\
+その中から使うもの\\
+遺伝子集合を抽出すること\\
+\#\#\#\#\#\#\#\#\#\#\# \\
+\end{comment}
+% MSigDB 説明
 
 
 
 \section{ニューラルネットワークの構造}
-\section{ネットワーク設計に使用したデータベース}
+\begin{comment}
+\#\#\#\#\#\#\#\#\#\#\# \\
+input layer、hidden layer、output layerについて全体と図\\
+input layerについて\\
+hidden layerについて(GO・ractomeとMSigDBのモジュール設計手法)\\
+ノードの数の決め方、エッジの計算方法、tanhとbatchnorm\\
+output layerについて\\
+\#\#\#\#\#\#\#\#\#\#\# \\
+\end{comment}
 
-\subsection{Gene Ontology}
-\subsection{Reactome}
+
+\subsection{input layer}
+入力層は、ヒトの各遺伝子1つ1つに対応するノード$g_n(1\leq n\leq N)$で構成され、それぞれのノードには遺伝子発現データが入力される。各サンプルの入力データは$x = \{x_1, x_2, \cdots, x_M\}$と表せる。
+
+
+\subsection{hidden layers}
+hidden layersは、データベースごとに、遺伝子集合とその親子関係に基づいて作成されたネットワークモジュール$D_k(1\leq k\leq K)$で構成される。
+
+　Gene OntologyやReactomeは、複数の遺伝子集合がDAG構造に整理されたデータベースであり、遺伝子集合に加え、遺伝子集合の親子関係を取得することができる。
+このとき、データベース上の遺伝子集合を$S_n(1\leq n\leq N)$、遺伝子集合$S_n$の子遺伝子集合のインデックスの集合を$C_n(1\leq n\leq N)$とする。\\
+ 　MSigDBは、複数の遺伝子集合が格納されたデータベースであり、Gene OntologyやReactomeにあるような遺伝子集合間の親子関係は定義されていない。そこで、データベース上の遺伝子集合間の親子関係を作成することとする。データベース上の遺伝子集合を$S_n(1\leq n\leq N)$とし、Algorithm 1に従って遺伝子集合$S_n$の子遺伝子集合のインデックスの集合$C_n(1\leq n\leq N)$を求めた。\\
+ \begin{algorithm}[H]
+ \caption{MSigDB上の遺伝子集合間の親子関係の作成方法}
+ \begin{algorithmic}[1]
+ \renewcommand{\algorithmicrequire}{\textbf{Input:}}
+ \renewcommand{\algorithmicensure}{\textbf{Output:}}
+ \REQUIRE $S_n(1\leq n\leq N)$：データベース上の遺伝子集合
+ \ENSURE  $C_n(1\leq n\leq N)$：遺伝子集合$S_n$の子遺伝子集合のインデックスの集合
+ \FOR {$n = 1, 2, \cdots , N$}
+ \STATE {$C_n = \{ \}$}
+ \STATE {$A = \{ x \in S | x \subset S_n\}$}
+ \FOR {$S_a \; in \; A$}
+ \IF {$\{ x \in A, x \neq S_a | S_a \subset x\} = \emptyset$}
+ \STATE {Add a to $C_n$}
+ \ENDIF
+ \ENDFOR
+ \ENDFOR
+ \end{algorithmic} 
+ \end{algorithm}
+
+
+遺伝子集合$S_n$に含まれる遺伝子のうち、$S_n$の子遺伝子集合に一度も含まれない遺伝子の集合を$T_n(1\leq n\leq N)$とすると、
+　$$T_n \: = \: S_n \; \; / \bigcup_{i\, in\, C_n} \! S_i$$
+と求められる。また、親遺伝子集合が存在しないルート遺伝子集合のインデックスの集合を$r$とすると、
+　$$r \: = \: \bigcup_{n=1}^{N} n \; \; / \;  \bigcup_{n=1}^{N} C_n$$
+と求められる。このとき、ネットワークモジュール$D_k = (V, E)$は以下の特徴を持つ：
+
+  \begin{quote}
+  \begin{itemize}
+  \item $V_n(1\leq n\leq N)$： $S_n$に対応したノード群。$V_n$に含まれるノードの数$|V_n|$は、$S_n$に含まれる遺伝子の数$|S_n|$を用いて、$$|V_n| = max(20, 0.3 \times |S_n|)$$と表される。
+  \item $E_n(1\leq n\leq N)$： $V_n$へ向かうエッジの集合。$E_n$の出発点となるノード群の集合を$I_n(1\leq n\leq N)$とすると、$$I_n \: = \: \bigcup_{i\, in\, C_n} \! V_i \; \; \cup \;  \bigcup_{j\, in\, T_n} g_j$$と表される。
+  \end{itemize}
+  \end{quote}
+ 
+ あるノード群$V_a \in I_n$から$V_n$への接続は、$V_a$の全てのノードから$V_n$の全てのノードに全結合することによって行う。$V_n$の値は、重みを$\bm{W}$、バイアスを$b$とすると、インプットベクトル$I_n$を用いて、$$V_n = BatchNorm(Tanh(W \cdot I_n + b))$$と求められる。
+  
+ 
+  
+  
+  
+  
+  
+ 
+  
+
+
+ 
+
+　
+
+
+
+
+\subsection{output layer}
+
+
 \section{評価方法}
 \section{予測に用いたデータセット}
 
