@@ -146,7 +146,8 @@ output layerについて\\
 
 
 \subsection{hidden layers}
-hidden layersは、データベースごとに、遺伝子集合とその親子関係に基づいて作成されたネットワークモジュール$D_k(1\leq k\leq K)$で構成される。
+ネットワーク作成に使用するデータベースを$D_k \; (1\leq k\leq K)$とする。$D_k$上の遺伝子集合とその親子関係が与えられたとき、遺伝子集合に対応する頂点と、親子関係に対応するエッジで構成されたネットワークの一部分を、ネットワークモジュール$M_k$とする。このときhidden layersは、$D_k$に対応したK個のネットワークモジュール$M_k \; (1\leq k\leq K)$で構成される。
+
 
 % Gene Ontology 親子関係取得
 \color{blue}---------------------------書き途中---------------------------\\
@@ -157,41 +158,22 @@ hidden layersは、データベースごとに、遺伝子集合とその親子�
 \color{blue}---------------------------------------------------------------\\
 \color{black}
 %MSigDB 親子関係取得
- 　MSigDBは、複数の遺伝子集合が格納されたデータベースであり、Gene OntologyやReactomeにあるような遺伝子集合間の親子関係は定義されていない。そこで、データベース上の遺伝子集合間の親子関係を作成することとする。データベース上の遺伝子集合を$S_n(1\leq n\leq N)$とし、$S_n$の集合を$S$とする。このとき、$S_n \in S$、$S_{n'} \in S$について、$S_{n'} \subset \alpha \subset S_n$を満たすような$\alpha \in S$が存在しない場合、$S_n$は$S_{n'}$の親であり、$S_{n'}$は$S_n$の子であると定義する。この親子関係の定義に基づいて、遺伝子集合$S_n$の子遺伝子集合のインデックスの集合$C_n(1\leq n\leq N)$を求めた(Algorithm 1)。\\
+ 　MSigDBは、複数の遺伝子集合が格納されたデータベースであり、Gene OntologyやReactomeにあるような遺伝子集合間の親子関係は定義されていない。そこで、データベース上の遺伝子集合間の親子関係を作成することとする。データベース上の遺伝子集合を$S_n \; (1\leq n\leq N)$とし、$S_n$の集合を$S$とする。このとき、$S$の任意の二つの要素$S_a \in S$、$S_b \in S$について、$S_{b} \subset s \subset S_a$を満たすような$s \in S$が存在しない場合、$S_a$は$S_b$の親であり、$S_b$は$S_a$の子であると定義する。この親子関係の定義に基づいて、遺伝子集合$S_n$の子遺伝子集合の集合$C_n \; (1\leq n\leq N)$を求めた(Algorithm 1)。\\
  
------
-
-ここでは，$S_n$の$n$は不要です．出来るだけ本質を捉えてスマートに記述すること．
-
-$n$の添え字にこだわりがあるのですか？
-
----
-
-データベースが定める遺伝子集合の全集合を$S$とする．
-$S$の任意の二つの要素
-$s_p, s_c \in S$に対して，
-$s_c \subset s \subset s_p$となる$s \in S$が存在しなければ，
-$s_p$は$s_c$の親(parent)であり，
-$s_c$は$s_p$の子(child)であるという．
-
-
-------
-
- 
- 
+  
  \begin{algorithm}[H]
  \caption{MSigDB上の遺伝子集合間の親子関係の作成方法}
  \begin{algorithmic}[1]
  \renewcommand{\algorithmicrequire}{\textbf{Input:}}
  \renewcommand{\algorithmicensure}{\textbf{Output:}}
  \REQUIRE $S = \{S_1, S_2, \cdots, S_N\}$：データベース上の遺伝子集合の集合
- \ENSURE  $C_n(1\leq n\leq N)$：遺伝子集合$S_n$の子遺伝子集合のインデックスの集合
- \FOR {$n = 1, 2, \cdots , N$}
- \STATE {$C_n = \{ \}$}
- \STATE {$A = \{ \alpha \in S | \alpha \subset S_n\}$}
- \FOR {each $S_{n'} \; in \; A$}
- \IF {$\{ \alpha \in A, \alpha \neq S_{n'} | S_{n'} \subset \alpha \} = \emptyset$}
- \STATE {Add $n'$ to $C_n$}
+ \ENSURE  $C_n \; (1\leq n\leq N)$：遺伝子集合$S_n$の子遺伝子集合の集合
+ \FOR {$a = 1, 2, \cdots , N$}
+ \STATE {$C_a = \{ \}$}
+ \STATE {$A = \{ \alpha \in S |  \alpha \subset S_a\}$}
+ \FOR {each $ \alpha \; in \; A$}
+ \IF {$\{ \beta \in A, \beta \neq \alpha | \beta \subset \alpha \} = \emptyset$}
+ \STATE {Add $\alpha$ to $C_a$}
  \ENDIF
  \ENDFOR
  \ENDFOR
@@ -199,24 +181,22 @@ $s_c$は$s_p$の子(child)であるという．
  \end{algorithm}
 
 
-遺伝子集合$S_n$に含まれる遺伝子のうち、$S_n$の子遺伝子集合に一度も含まれない遺伝子の集合を$T_n(1\leq n\leq N)$とすると、
-　$$T_n \: = \: S_n \; \; / \bigcup_{i\, in\, C_n} \! S_i$$
-と求められる。また、親遺伝子集合が存在しないルート遺伝子集合のインデックスの集合を$r$とすると、
-　$$r \: = \: \bigcup_{n=1}^{N} n \; \; / \;  \bigcup_{n=1}^{N} C_n$$
+遺伝子集合$S_n$に含まれる遺伝子のうち、$C_n$内の遺伝子集合に一度も含まれない遺伝子の集合を$T_n(1\leq n\leq N)$とすると、
+　$$T_n = S_n / \bigcup_{S_i\, in\, C_n} \! S_i$$
+と求められる。また、親遺伝子集合が存在しないルート遺伝子集合の集合を$r$とすると、
+　$$r = \bigcup_{n=1}^{N} n / \bigcup_{n=1}^{N} C_n$$
 と求められる。このとき、ネットワークモジュール$D_k = (V, E)$は以下の特徴を持つ：
 
   \begin{quote}
   \begin{itemize}
-  \item $V_n(1\leq n\leq N)$： $S_n$に対応したノード群。$V_n$に含まれるノードの数$|V_n|$は、$S_n$に含まれる遺伝子の数$|S_n|$を用いて、$$|V_n| = max(20, 0.3 \times |S_n|)$$と表される。
-  \item $E_n(1\leq n\leq N)$： $V_n$へ向かうエッジの集合。$E_n$の出発点となるノード群の集合を$I_n(1\leq n\leq N)$とすると、$$I_n \: = \: \bigcup_{i\, in\, C_n} \! V_i \; \; \cup \;  \bigcup_{j\, in\, T_n} g_j$$と表される。
+  \item $V_n \; (1\leq n\leq N)$： $S_n$に対応したノード群。$V_n$に含まれるノードの数$|V_n|$は、$S_n$に含まれる遺伝子の数$|S_n|$を用いて、$$|V_n| = max(20, 0.3 \times |S_n|)$$と表される。
+  \item $E_n \; (1\leq n\leq N)$： $V_n$へ向かうエッジの集合。$E_n$の出発点となるノード群の集合を$I_n \; (1\leq n\leq N)$とすると、$$I_n =  \bigcup_{S_i\, in\, C_n}V_i \cup \bigcup_{j\, in\, T_n} g_j$$と表される。
   \end{itemize}
   \end{quote}
  
  あるノード群$V_a \in I_n$から$V_n$への接続は、$V_a$の全てのノードから$V_n$の全てのノードに全結合することによって行う。$V_n$の値は、重みを$\bm{W}$、バイアスを$b$とすると、インプットベクトル$I_n$を用いて、$$V_n = BatchNorm(Tanh(W \cdot I_n + b))$$と求められる。
-  
- 
-  
-  
+
+
   
   
   
